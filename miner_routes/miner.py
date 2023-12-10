@@ -31,7 +31,7 @@ async def get_columns(file: UploadFile):
         #get filename
         filename = file.filename.split(".")[0]
         extension = file.filename.split(".")[1]
-        filename = f"{filename}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.{extension}"
+        filename = f"Files\{filename}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.{extension}"
         with open(filename, "wb") as buffer:
             buffer.write(file.file.read())
         #check the file extension
@@ -43,7 +43,7 @@ async def get_columns(file: UploadFile):
 
         # elif file.filename.endswith(".csv"):
             #load the file
-        dataframe = pd.read_csv(file.filename, sep=",")
+        dataframe = pd.read_csv(filename, sep=",")
         return {"columns": list(dataframe.keys()), "filename": filename}
         # else:
         #     raise HTTPException(status_code=400, detail="File extension not supported")    
@@ -53,8 +53,8 @@ async def get_columns(file: UploadFile):
         logging.exception("An error occurred:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@router.post("/process_event_log")
-async def process_event_log(EventLog: EventLog):
+@router.post("/create_bpmn")
+async def create_bpmn(EventLog: EventLog):
     try:
         event_log = pd.read_csv(EventLog.filename, parse_dates=[EventLog.timestamp], infer_datetime_format=True)
         dataframe = pm4py.format_dataframe(event_log, case_id=EventLog.caseID, activity_key=EventLog.activity, timestamp_key=EventLog.timestamp)
@@ -65,6 +65,7 @@ async def process_event_log(EventLog: EventLog):
 
         #save it to .bpmn file
         bpmnfile = f"{EventLog.filename.split('.')[0]}.bpmn"
+        bpmnfile = bpmnfile.replace("Files", "output_bpmn")
         pm4py.write_bpmn(bpmn_graph, bpmnfile)
         # pm4py.view_bpmn(bpmn_graph)
         # gviz = pt_visualizer.apply(tree)
