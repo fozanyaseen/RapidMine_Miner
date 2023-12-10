@@ -61,9 +61,7 @@ async def create_bpmn(EventLog: EventLog):
         event_log = pm4py.convert_to_event_log(dataframe)
         tree = pm4py.discover_process_tree_inductive(event_log)
         bpmn_graph = pm4py.convert_to_bpmn(tree)
-        # net, initial_marking, final_marking = inductive_miner.apply(event_log)
 
-        #save it to .bpmn file
         bpmnfile = f"{EventLog.filename.split('.')[0]}.bpmn"
         bpmnfile = bpmnfile.replace("Files", "output_bpmn")
         pm4py.write_bpmn(bpmn_graph, bpmnfile)
