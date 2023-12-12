@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.objects.conversion.log import converter as log_converter
 from pm4py.visualization.process_tree import visualizer as pt_visualizer
+from RapidMine_ProcessMiner import Discoverer
+
 
 
 router = APIRouter()
@@ -22,6 +24,7 @@ class EventLog(BaseModel):
     caseID: str
     activity: str
     timestamp: str
+
 
 
 @router.post("/get_columns")
@@ -56,25 +59,33 @@ async def get_columns(file: UploadFile):
 @router.post("/create_bpmn")
 async def create_bpmn(EventLog: EventLog):
     try:
-        event_log = pd.read_csv(EventLog.filename, parse_dates=[EventLog.timestamp], infer_datetime_format=True)
-        dataframe = pm4py.format_dataframe(event_log, case_id=EventLog.caseID, activity_key=EventLog.activity, timestamp_key=EventLog.timestamp)
-        event_log = pm4py.convert_to_event_log(dataframe)
-        tree = pm4py.discover_process_tree_inductive(event_log)
-        bpmn_graph = pm4py.convert_to_bpmn(tree)
+        # event_log = pd.read_csv(EventLog.filename, parse_dates=[EventLog.timestamp], infer_datetime_format=True)
+        # dataframe = pm4py.format_dataframe(event_log, case_id=EventLog.caseID, activity_key=EventLog.activity, timestamp_key=EventLog.timestamp)
+        # event_log = pm4py.convert_to_event_log(dataframe)
+        # tree = pm4py.discover_process_tree_inductive(event_log)
+        # bpmn_graph = pm4py.convert_to_bpmn(tree)
 
-        bpmnfile = f"{EventLog.filename.split('.')[0]}.bpmn"
-        bpmnfile = bpmnfile.replace("Files", "output_bpmn")
-        pm4py.write_bpmn(bpmn_graph, bpmnfile)
+        # bpmnfile = f"{EventLog.filename.split('.')[0]}.bpmn"
+        # bpmnfile = bpmnfile.replace("Files", "output_bpmn")
+        # pm4py.write_bpmn(bpmn_graph, bpmnfile)
         # pm4py.view_bpmn(bpmn_graph)
         # gviz = pt_visualizer.apply(tree)
         # pt_visualizer.view(gviz)
         #save bpmnfile to a string
-        with open(bpmnfile, "r") as buffer:
-            bpmnXML = buffer.read()
-        return {"bpmn": bpmnXML}
+        # discoverer = Discoverer()
+        bpmnfile = Discoverer.discover_process_from_csv(EventLog)
+        return bpmnfile
     except Exception as e:
         logging.exception("An error occurred:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.get("/get_insights")
+async def get_insights():
+    try:
+        return {"average_activity_times": "average_activity_times"}
+    except Exception as e:
+        logging.exception("An error occurred:", e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")    
 
 
 
