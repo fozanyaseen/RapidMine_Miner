@@ -30,9 +30,7 @@ def get_process_insights(EventLogCSV):
     formatted_average_case_duration = format_time(average_case_duration.total_seconds())
 
     average_duration_per_activity = get_average_activity_times(EventLog)
-    formatted_average_duration_per_activity = {}
-    for activity in average_duration_per_activity:
-        formatted_average_duration_per_activity[activity] = format_time(average_duration_per_activity[activity])
+    # formatted_average_duration_per_activity = {activity['activity']: format_time(average_duration_per_activity[activity]['duration']) for activity in average_duration_per_activity}    
 
     long_cases = get_long_cases(dataframe, average_case_duration)
 
@@ -44,21 +42,42 @@ def get_process_insights(EventLogCSV):
 
     sorted_case_times = sort_case_times(EventLog, caseID)
     
-    return {"total_cases": formatted_total_cases, "average_case_duration": formatted_average_case_duration, "average_duration_per_activity": formatted_average_duration_per_activity, "long_cases": long_cases, "critical_path_duration": formatted_critical_path_duration, "critical_path_activities": critical_path_activities, "sorted_case_times": sorted_case_times}
+    return {"total_cases": total_cases,
+            "formatted_total_cases": formatted_total_cases,
+
+            "average_case_duration": average_case_duration,
+            "formatted_average_case_duration": formatted_average_case_duration,
+
+            "average_duration_per_activity": average_duration_per_activity,
+            # "formatted_average_duration_per_activity": formatted_average_duration_per_activity,
+
+            "long_cases": long_cases,
+
+            "critical_path_duration": critical_path_duration,
+            "formatted_critical_path_duration": formatted_critical_path_duration,
+
+            "critical_path_activities": critical_path_activities,
+
+            "sorted_case_times": sorted_case_times
+            }
 
 
 def sort_case_times(EventLog, case_id):
     # Sort the traces by their total duration
-    trace_durations = []
+    trace_durations = {}
     for trace in EventLog:
         if len(trace) > 1:
             start_time = trace[0]['time:timestamp']
             end_time = trace[-1]['time:timestamp']
             duration = (end_time - start_time).total_seconds()
-            trace_durations.append((duration, trace[0][case_id]))
+            trace_durations[trace[0][case_id]] = duration
 
-    trace_durations.sort(key=lambda x: x[0], reverse=True)
-    return trace_durations
+    sorted_trace_durations = sorted(trace_durations.items(), key=lambda x: x[1], reverse=True)
+
+    #create sorted_trace_durations a list of dicts
+    sorted_trace_durations = [{"caseID": trace[0], "duration": trace[1]} for trace in sorted_trace_durations]
+    
+    return sorted_trace_durations
 
 def get_critical_path_activities(EventLog):
     trace_durations = []
@@ -109,6 +128,16 @@ def get_average_case_duration(dataframe):
 
 def get_long_cases(dataframe, average_case_duration):
     long_cases = dataframe[dataframe['case_duration'] > average_case_duration]
+    # save it in a list of dictionaries so that every dictionary contains the case id, the duration, and the formatted duration
+    long_cases = long_cases[['case:concept:name', 'case_duration']]
+    # long_cases['formatted_duration'] = long_cases['case_duration'].astype('int64')
+    # long_cases['formatted_duration'] = long_cases['formatted_duration'].apply(format_time)
+
+    long_cases = long_cases.to_dict('records')
+
+    # remove duplicates
+    long_cases = [dict(t) for t in {tuple(d.items()) for d in long_cases}]
+
     return long_cases
 
 
@@ -126,6 +155,28 @@ def get_average_activity_times(EventLog):
 
     for activity in average_duration_per_activity:
         average_duration_per_activity[activity] = sum(average_duration_per_activity[activity]) / len(average_duration_per_activity[activity])
+
+    #find shortest and longest time for every activity
+    shortest_duration_per_activity = {}
+    longest_duration_per_activity = {}
+    for trace in EventLog:
+        for i in range(0, len(trace) - 1):
+            current_activity = trace[i]['concept:name']
+            next_activity = trace[i + 1]['concept:name']
+            duration = (trace[i + 1]['time:timestamp'] - trace[i]['time:timestamp']).total_seconds()
+            if current_activity not in shortest_duration_per_activity:
+                shortest_duration_per_activity[current_activity] = duration
+            if current_activity not in longest_duration_per_activity:
+                longest_duration_per_activity[current_activity] = duration
+            if duration < shortest_duration_per_activity[current_activity]:
+                shortest_duration_per_activity[current_activity] = duration
+            if duration > longest_duration_per_activity[current_activity]:
+                longest_duration_per_activity[current_activity] = duration
+                
+
+
+    #make it a list of dicts
+    average_duration_per_activity = [{"activity": activity, "average_duration": average_duration_per_activity[activity], "formatted_average_duration": format_time(average_duration_per_activity[activity]), "shortest_duration": shortest_duration_per_activity[activity], "formatted_shortest_duration": format_time(shortest_duration_per_activity[activity]), "longest_duration": longest_duration_per_activity[activity], "formatted_longest_duration": format_time(longest_duration_per_activity[activity])} for activity in average_duration_per_activity]
     return average_duration_per_activity
 
 def format_number(num):
