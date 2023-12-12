@@ -1,4 +1,12 @@
+# Ignore .env file
 .env
-venv/
-Files/
-output_bpmn
+
+# Ignore venv directory
+venv
+# Ignore Files directory
+# Files/
+
+# Ignore output_bpmn file
+# output_bpmn
+
+task_extraction.ipynb
