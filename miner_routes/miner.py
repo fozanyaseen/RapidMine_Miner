@@ -53,14 +53,6 @@ async def create_bpmn(EventLog: EventLog):
         logging.exception("An error occurred:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@router.get("/get_insights")
-async def get_insights(EventLog: EventLog):
-    try:
-        insights = Analytics.get_process_insights(EventLog)
-        return insights
-    except Exception as e:
-        logging.exception("An error occurred:", e)
-        raise HTTPException(status_code=500, detail="Internal Server Error")    
 
 
 

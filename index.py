@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # from routes import process_owner_routes
 # from routes import employee_routes
 from miner_routes import miner
+from insights_routes import insights
 
 # from transcriber import transcriber
 app = FastAPI()
@@ -18,6 +19,7 @@ app.add_middleware(
 
 
 app.include_router(miner.router, prefix="/miner", tags=["Miner"])
+app.include_router(insights.router, prefix="/insights", tags=["Insights"])
 
 # app.include_router(employee_routes.router, prefix="/employee", tags=["Employee"])
 # app.include_router(process_routes.router, prefix="/process", tags=["Process"])
